@@ -1,46 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 </head>
+
 <body>
-    
+
 </body>
 <script>
     const demo1 = {
-    "data": [{
-        "type": "articles",
-        "id": "1",
-        "attributes": {
-            "title": "JSON API paints my bikeshed!"
-        },
-        "links": {
-            "self": "http://example.com/articles/1"
-        },
-        "relationships": {
-            "author": {
-                "links": {
-                    "self": "http://example.com/articles/1/relationships/author",
-                    "related": "http://example.com/articles/1/author"
-                },
-                "data": { "type": "people", "id": "9" }
+        "data": [{
+            "type": "articles",
+            "id": "1",
+            "attributes": {
+                "title": "JSON API paints my bikeshed!"
             },
-            "comments": {
-                "links": {
-                    "self": "http://example.com/articles/1/relationships/comments",
-                    "related": "http://example.com/articles/1/comments"
+            "links": {
+                "self": "http://example.com/articles/1"
+            },
+            "relationships": {
+                "author": {
+                    "links": {
+                        "self": "http://example.com/articles/1/relationships/author",
+                        "related": "http://example.com/articles/1/author"
+                    },
+                    "data": { "type": "people", "id": "9" }
                 },
-                "data": [
-                    { "type": "comments", "id": "5" },
-                    { "type": "comments", "id": "12" }
-                ]
+                "comments": {
+                    "links": {
+                        "self": "http://example.com/articles/1/relationships/comments",
+                        "related": "http://example.com/articles/1/comments"
+                    },
+                    "data": [
+                        { "type": "comments", "id": "5" },
+                        { "type": "comments", "id": "12" }
+                    ]
+                }
             }
-        }
-    }],
-    "included": [{
+        }],
+        "included": [{
             "type": "people",
             "id": "9",
             "attributes": {
@@ -92,105 +94,106 @@
                 "self": "http://example.com/people/2"
             }
         }
-    ]
-}
-
-class clap {
-    constructor() {}
-    m = new Map();
-    // 处理attrbutes数据
-    clapAttributes(obj) {
-        if (obj.hasOwnProperty('attributes')) {
-          let { attributes, id, type } = obj
-          return {
-              id,
-              type,
-              ...attributes
-          }
-        }
-    }
-    transformMapIncluded(included) {
-        included.forEach(element => {
-            this.m.set(element.type + '-' + element.id, element)
-        });
-       
+        ]
     }
 
-    maching(item) {
-        let childData = {};
-        let queryData;
-        let queryCod = item.type + '-' + item.id
-        queryData = this.m.get(queryCod);
-        let { relationships: rel } = queryData;
-        if (rel) {
-            childData= this.query(rel)
-        }
-        return {
-            childData,
-            queryData
-        }
-    }
-
-    // 查找数据 返回数据
-    query(relationships) {
-        let props = Object.keys(relationships);
-        let object = {};
-        props.forEach(prop => {
-            let { data: queryParam, ...data } = relationships[prop];
-            if (Array.isArray(queryParam)) {
-                let list = [];
-                queryParam.forEach(item => {
-                    let { childData, queryData } = this.maching(item)
-                    list.push({
-                        ...this.clapAttributes(queryData),
-                        ...childData
-                    })
-                })
-                object[prop] = {
-                    childData: list,
-                    ...data
-                }
-                
-            } else {
-                let { childData, queryData } = this.maching(queryParam)
-                if(Object.keys(childData).length==0){
-                    object[prop] = {
-                        // 对象里自身有relationships，需放到data同级
-                        ... this.clapAttributes(queryData),
-                        ...data
-                    }
+    class clap {
+        constructor() { }
+        m = new Map();
+        // 处理attrbutes数据
+        clapAttributes(obj) {
+            if (obj.hasOwnProperty('attributes')) {
+                let { attributes, id, type } = obj
+                return {
+                    id,
+                    type,
+                    ...attributes
                 }
             }
-        })
-        return object
-    }
+        }
+        transformMapIncluded(included) {
+            included.forEach(element => {
+                this.m.set(element.type + '-' + element.id, element)
+            });
 
-    emptyM() {
-        this.m = null
-    }
+        }
 
-    transform(obj) {
-        // let {astrictData,astrictIncluded}=obj1;
-        let { data, included } = obj;
-        included = this.transformMapIncluded(included);
-        let list = [];
-        data.forEach(item => {
-            let top_lv={childData:null}
-            let output = this.clapAttributes(item); 
-            let relationships = item.relationships;
-            let queryData = this.query(relationships)
-            top_lv.childData=queryData
-            output = Object.assign({}, output, top_lv)
-            list.push(output)
-        })
-        this.emptyM()
-        console.log(list)
-        return list
-    }
-}
-const c1 = new clap();
+        maching(item) {
+            let childData = {};
+            let queryData;
+            let queryCod = item.type + '-' + item.id
+            queryData = this.m.get(queryCod);
+            let { relationships: rel } = queryData;
+            if (rel) {
+                childData = this.query(rel)
+            }
+            return {
+                childData,
+                queryData
+            }
+        }
 
-c1.transform(demo1);
+        // 查找数据 返回数据
+        query(relationships) {
+            let props = Object.keys(relationships);
+            let object = {};
+            props.forEach(prop => {
+                let { data: queryParam, ...data } = relationships[prop];
+                if (Array.isArray(queryParam)) {
+                    let list = [];
+                    queryParam.forEach(item => {
+                        let { childData, queryData } = this.maching(item)
+                        list.push({
+                            ...this.clapAttributes(queryData),
+                            ...childData
+                        })
+                    })
+                    object[prop] = {
+                        childData: list,
+                        ...data
+                    }
+
+                } else {
+                    let { childData, queryData } = this.maching(queryParam)
+                    if (Object.keys(childData).length == 0) {
+                        object[prop] = {
+                            // 对象里自身有relationships，需放到data同级
+                            ... this.clapAttributes(queryData),
+                            ...data
+                        }
+                    }
+                }
+            })
+            return object
+        }
+
+        emptyM() {
+            this.m = null
+        }
+
+        transform(obj) {
+            // let {astrictData,astrictIncluded}=obj1;
+            let { data, included } = obj;
+            included = this.transformMapIncluded(included);
+            let list = [];
+            data.forEach(item => {
+                let top_lv = { childData: null }
+                let output = this.clapAttributes(item);
+                let relationships = item.relationships;
+                let queryData = this.query(relationships)
+                top_lv.childData = queryData
+                output = Object.assign({}, output, top_lv)
+                list.push(output)
+            })
+            this.emptyM()
+            console.log(list)
+            return list
+        }
+    }
+    const c1 = new clap();
+
+    c1.transform(demo1);
 
 </script>
+
 </html>
