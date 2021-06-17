@@ -112,43 +112,16 @@
     }
 
     class clap {
-
-        constructor() {
-            this.initMap();
-        }
-        //!!! m = new Map(); 不要使用单字母的变量名称，不容易修改，还容易被写错
-        map = null
-        initMap() {
-            this.map = new Map();
-        }
-        //  emptyM() {} 移动到上方是为了 关注点集中 更名为emptyMap
-        emptyMap() {
-            // this.map = null // 置空会导致解析下一个 jsonApi 时报错，因为 null 没有set 方法和 get 方法
-            this.map.clear();// GOOD!
-        }
-        //对 map的操作也提上来了，目前看来所有map操作，可以一屏看到，清晰明了
-        transformMapIncluded(included) {
-            included.forEach(element => {
-                this.map.set(this.buildIndex(element), element)
-            });
-            console.log(this.map)
-        }
-
-        //加一个小方法,为的是id 或者 key 的标准化
-        buildIndex() {
-            return [item.type, item.id].join("-");
-        }
-
-        //参数叫obj没啥子问题，可以用，但是不得不通过上下文取理解这个obj时什么，很累，改成 resource 了，所有处理 资源 的地方，都用 resource 方便快速定位问题和加快理解
-        clapAttributes(resource) {
-            // 处理attrbutes数据
-            if (resource.hasOwnProperty('attributes')) {
+        constructor() { }
+        m = new Map();
+        // 处理attrbutes数据
+        clapAttributes(obj) {
+            if (obj.hasOwnProperty('attributes')) {
                 let {
                     attributes,
                     id,
                     type
-                } = resource
-
+                } = obj
                 return {
                     id,
                     type,
@@ -156,12 +129,18 @@
                 }
             }
         }
+        transformMapIncluded(included) {
+            included.forEach(element => {
+                this.m.set(element.type + '-' + element.id, element)
+            });
+            console.log(this.m)
+        }
 
         maching(item) {
             let childData = {};
             let queryData;
             let queryCod = item.type + '-' + item.id
-            queryData = this.map.get(queryCod);
+            queryData = this.m.get(queryCod);
             let {
                 relationships: rel
             } = queryData;
@@ -215,29 +194,28 @@
             })
             return object
         }
-        //obj 改 jsonApiData
-        transform(jsonApiData) {
+
+        emptyM() {
+            this.m = null
+        }
+
+        transform(obj) {
             let {
                 data,
                 included
-            } = jsonApiData;
-
-            // included = this.transformMapIncluded(included);//去掉 included = 了
-            this.transformMapIncluded(included);
-
-            // let list = []; //编写可读代码的艺术.pdf flated
-            let flated = [];
-
+            } = obj;
+            included = this.transformMapIncluded(included);
+            let list = [];
             data.forEach(item => {
                 let output = this.clapAttributes(item);
                 let relationships = item.relationships;
                 let queryData = this.query(relationships)
                 output = Object.assign({}, output, queryData)
-                flated.push(output)
+                list.push(output)
             })
-            this.emptyMap()
-            console.log(flated)
-            return flated
+            this.emptyM()
+            console.log(list)
+            return list
         }
     }
     const c1 = new clap();
